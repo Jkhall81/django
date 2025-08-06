@@ -49,6 +49,7 @@ from django.utils.functional import cached_property
 from django.utils.regex_helper import _lazy_re_compile
 from django.utils.tree import Node
 
+
 __all__ = ["Query", "RawQuery"]
 
 # RemovedInDjango70Warning: When the deprecation ends, replace with:
@@ -643,11 +644,16 @@ class Query(BaseExpression):
         return dict(zip(outer_query.annotation_select, result))
 
     def get_count(self, using):
-        """
-        Perform a COUNT() query using the current filter constraints.
-        """
+        from django.db.models import Count
+
         obj = self.clone()
+        if obj.annotations:
+            obj.annotations.clear()
+            obj.clear_ordering(force=True)
+            obj.clear_select_clause()  # reset select to avoid broken SQL
         return obj.get_aggregation(using, {"__count": Count("*")})["__count"]
+
+
 
     def has_filters(self):
         return self.where
